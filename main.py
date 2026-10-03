@@ -35,7 +35,7 @@ with st.sidebar:
     l = l_cm / 100
     h = h_cm / 100
     S = l * h
-    st.write(f"Surface S = {S:.4f} m²")
+    st.write(f"Surface S = {S:.3e} m²")
 
     st.subheader("Matériau")
     rho = st.number_input("Densité ρ (kg/m³)", value=7850, step=100, key="rho")
@@ -191,7 +191,7 @@ if st.button("SIMULATION", type="primary"):
         # Déformées
         st.subheader("12 premières déformées modales")
         
-        with st.spinner("Génération des graphiques modaux..."):
+        with st.spinner("Affichages des graphes..."):
             # Création du dossier temporaire pour l'image
             output_directory = Path("output")
             output_directory.mkdir(exist_ok=True)
