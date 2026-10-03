@@ -10,7 +10,8 @@ def phi(x, k, sigma):
     return np.cos(k*x) + np.cosh(k*x) + sigma * (np.sin(k*x) + np.sinh(k*x))
 
 
-def synthese_lame(L, S, rho, E, I_y, duree, fs, x_impact, I_0, x_ecoute, N_modes, excitation_type="dirac", Te=0.001):
+
+def synthese_lame(L, S, rho, E, I_y, duree, fs, x_impact, I_0, x_ecoute, N_modes, alpha=0.0, beta=0.0, excitation_type="dirac", Te=0.001):
     """
     - Poutre 1D (on ne considère que la flexion selon z dans une succession de plans (y, z))
     - Avec amortissement de Rayleigh (alpha + beta * omega^2)
@@ -171,7 +172,7 @@ if __name__ == "__main__":
     Te = playing["impact_duration"] # Durée de l'impact (s) si excitation de type porte
 
     # Lancement du calcul
-    temps, audio = synthese_lame(L, S, rho, E, I_y, duree, fs, x_impact, I_0, x_ecoute, N_modes, excitation_type=excitation_type, Te=Te)
+    temps, audio = synthese_lame(L, S, rho, E, I_y, duree, fs, x_impact, I_0, x_ecoute, N_modes, alpha=alpha, beta=beta, excitation_type=excitation_type, Te=Te)
     
     # Export audio
     output_directory = Path("output")

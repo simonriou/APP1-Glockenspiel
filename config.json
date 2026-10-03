@@ -1,8 +1,8 @@
 {
 	"geometry": {
-		"length": 0.30,
-		"width": 0.03,
-		"thickness": 0.008
+		"length": 0.25,
+		"width": 0.05,
+		"thickness": 0.01
 	},
     "model": {
         "damping": 1,
@@ -17,7 +17,7 @@
 	"synthesis": {
 		"duration": 2.0,
 		"sampling_frequency": 44100,
-		"modes": 24
+		"modes": 32
 	},
 	"playing": {
 		"impact_position": 0.15,
