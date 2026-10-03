@@ -5,12 +5,13 @@
 		"thickness": 0.008
 	},
     "model": {
-        "damping": 1
+        "damping": 1,
+		"porte_t": 1
     },
 	"material": {
 		"density": 7850.0,
 		"young_modulus": 200000000000.0,
-        "alpha": 2.0,
+        "alpha": 3.0,
         "beta": 0.0000001
 	},
 	"synthesis": {
@@ -21,6 +22,7 @@
 	"playing": {
 		"impact_position": 0.15,
 		"impulse": 1.0,
-		"listening_position": 0.075
+		"listening_position": 0.075,
+		"impact_duration": 0.001
 	}
 }

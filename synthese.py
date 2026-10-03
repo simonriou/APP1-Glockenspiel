@@ -10,13 +10,13 @@ def phi(x, k, sigma):
     return np.cos(k*x) + np.cosh(k*x) + sigma * (np.sin(k*x) + np.sinh(k*x))
 
 
-def synthese_lame(L, S, rho, E, I_y, duree, fs, x_impact, I_0, x_ecoute, N_modes):
+def synthese_lame(L, S, rho, E, I_y, duree, fs, x_impact, I_0, x_ecoute, N_modes, excitation_type="dirac", Te=0.001):
     """
     - Poutre 1D (on ne considère que la flexion selon z dans une succession de plans (y, z))
-    - Pas d'amortissement
+    - Avec amortissement de Rayleigh (alpha + beta * omega^2)
     - Approximation des k_n en considérant 1/cosh(x) ~ 0
     - CLs libre-libre
-    - Excitation localisée en temps et en espace
+    - Excitation localisée en temps et en espace OU fonction porte (durée Te)
     """
 
     # Vecteur temps pour l'audio final
@@ -51,21 +51,38 @@ def synthese_lame(L, S, rho, E, I_y, duree, fs, x_impact, I_0, x_ecoute, N_modes
         # On évalue la forme sur toute la grille, on l'élève au carré, et on intègre l'aire.
         forme_sur_grille = phi(x_grille, k, sigma)
         M_n = np.trapezoid(rho * S * forme_sur_grille**2, x_grille)
+        K_n = M_n * omega_n**2  # Raideur modale
         
         # Amplitudes temporelles
-        
+        A_n = 0
         # Force d'excitation reçue par le mode n
         amplitude_impact = phi(x_impact, k, sigma)
         
         # Déformée modale évaluée au point d'écoute
         amplitude_ecoute = phi(x_ecoute, k, sigma)
-        
-        # Amplitude temporelle associée au mode n
-        A_n = (I_0 * amplitude_impact) / (M_n * omega_d)
-        
-        # Contribution temporelle du mode n
-        q_n_t = A_n * np.sin(omega_d * t) * np.exp(-delta_n * t) # Décroissance exponentielle si amortissement (= 1 si pas d'amortissement)
-        
+
+        if excitation_type == "dirac":
+            # Amplitude temporelle associée au mode n
+            A_n = (I_0 * amplitude_impact) / (M_n * omega_d)
+            
+            # Contribution temporelle du mode n pour une excitation de type Dirac
+            q_n_t = A_n * np.sin(omega_d * t) * np.exp(-delta_n * t) # Décroissance exponentielle si amortissement (= 1 si pas d'amortissement)
+
+        elif excitation_type == "porte":
+            # Amplitude temporelle associée au mode n
+            A_n = (I_0 * amplitude_impact) / (K_n)
+
+            # Contribution temporelle du mode n pour une excitation de type porte
+            tmps_decale = np.maximum(0, t - Te)
+            heaviside_Te = (t >= Te).astype(float) # u(t - Te)
+            reponse_retardee = 1 - np.exp(-delta_n * tmps_decale) * (np.cos(omega_d * tmps_decale) + (delta_n / omega_d) * np.sin(omega_d * tmps_decale))
+            reponse_retardee = reponse_retardee * heaviside_Te
+
+            reponse_t = 1 - np.exp(-delta_n * t) * (np.cos(omega_d * t) + (delta_n / omega_d) * np.sin(omega_d * t))
+            q_n_t = reponse_t - reponse_retardee
+
+            q_n_t *= A_n
+
         # Accumulateur des contributions modales pour le signal final
         signal_total += amplitude_ecoute * q_n_t
 
@@ -131,7 +148,10 @@ if __name__ == "__main__":
 
     if amortissement:
         alpha = material["alpha"]
-        beta = material["beta"]      
+        beta = material["beta"]
+
+    porte_t = model["porte_t"] # 1 si on considère une excitation comme fonction porte, 0 comme Dirac
+    excitation_type = "porte" if porte_t else "dirac"
 
     L = geometry["length"]
     l = geometry["width"]
@@ -148,14 +168,15 @@ if __name__ == "__main__":
     x_impact = playing["impact_position"]
     I_0 = playing["impulse"]
     x_ecoute = playing["listening_position"]
+    Te = playing["impact_duration"] # Durée de l'impact (s) si excitation de type porte
 
     # Lancement du calcul
-    temps, audio = synthese_lame(L, S, rho, E, I_y, duree, fs, x_impact, I_0, x_ecoute, N_modes)
+    temps, audio = synthese_lame(L, S, rho, E, I_y, duree, fs, x_impact, I_0, x_ecoute, N_modes, excitation_type=excitation_type, Te=Te)
     
     # Export audio
     output_directory = Path("output")
     output_directory.mkdir(exist_ok=True)
-    write(output_directory / f"synthese_lame_amort_{N_modes}.wav", fs, audio.astype(np.float32))
+    write(output_directory / f"synthese_lame_amort_{excitation_type}_{N_modes}.wav", fs, audio.astype(np.float32))
 
     # Export des formes spatiales des 12 premiers modes
     visualiser_modes(L, output_directory / "modes.jpg")
